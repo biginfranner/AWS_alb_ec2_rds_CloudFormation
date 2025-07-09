@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: セキュリティグループ設定（ALB, EC2, RDS）
+
+Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !ImportValue WebSystemVPCID  # NetworkStackのVPC IDをExportしておく想定
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ALB-SG
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for EC2 #（Session Manager限定、ALBからのみ許可）
+      VpcId: !ImportValue WebSystemVPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup  # ALBのSGを参照
+      Tags:
+        - Key: Name
+          Value: EC2-SG
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS #（EC2からのアクセス許可のみ）
+      VpcId: !ImportValue WebSystemVPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306  # MySQLの場合
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: RDS-SG
+Outputs:
+  ALBSecurityGroupId:
+    Description: ALBのセキュリティグループID
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: ALBSecurityGroupID
+
+  EC2SecurityGroupId:
+    Description: EC2のセキュリティグループID
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: EC2SecurityGroupID
+
+  RDSSecurityGroupId:
+    Description: RDSのセキュリティグループID
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: RDSSecurityGroupID
