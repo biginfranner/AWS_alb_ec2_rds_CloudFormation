@@ -1,0 +1,2 @@
+# AWS_alb_ec2_rds_CloudFormation
+以前手動で作成したALB-EC2-RDS環境をCloudFormationを用いてIaC化しました。
