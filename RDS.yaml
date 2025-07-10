@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RDS MultiAZ
+
+Parameters:
+  DBUsername:
+    Type: String
+    Description: The database admin account username
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: The database admin account password
+# NoEcho:true CloudFormation実行画面などで内容が表示されない
+Resources:
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS Multi-AZ
+      SubnetIds:
+        - !ImportValue PrivateSubnetA
+        - !ImportValue PrivateSubnetC
+      Tags:
+        - Key: Name
+          Value: RDSSubnetGroup
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS
+      VpcId: !ImportValue WebSystemVPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !ImportValue EC2SecurityGroupID
+      Tags:
+        - Key: Name
+          Value: RDS-SG
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: WebSystemRDS
+      #AWSコンソールやCLIで表示される名前
+      AllocatedStorage: 20
+      #ストレージ容量:min20GB~max16TB
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: 8.0.35
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      MultiAZ: true
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 7
+      #自動バックアップを何日間保持するかを指定。
+      DeletionProtection: false
+      #CloudFormationスタック削除やAWS コンソールから削除の有効化・無効化
+      Tags:
+        - Key: Name
+          Value: WebSystemRDS
+
+Outputs:
+  RDSAddress:
+    Description: The endpoint address of the RDS instance
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    #RDSインスタンスのDNSアドレス(ホスト名)を取得
+    Export:
+      Name: RDSAddress

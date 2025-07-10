@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: セキュリティグループ設定（ALB, EC2, RDS）
+Description: SecurityGroup(ALB, EC2, RDS)
 
 Resources:
   ALBSecurityGroup:

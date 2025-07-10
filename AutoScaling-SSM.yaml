@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Auto Scaling Group for WebSystem with ALB integration and SSM support
+
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+    #①常に最新のAMIを使える、SSMパラメータストアを利用することで自動的に更新されたAMI IDを取得できます。SSMパラメータの値(AMI ID)を取得。
+    #②Defalutに指定されたSSMパラメータのパスを指定する。どこから取得するか示す。
+Resources:
+
+  EC2SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: EC2SSMRole
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2SSMRole
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: WebServerLaunchTemplate
+      LaunchTemplateData:
+        InstanceType: t3.micro
+        ImageId: !Ref LatestAmiId
+        IamInstanceProfile:
+          Arn: !GetAtt EC2InstanceProfile.Arn
+        SecurityGroupIds:
+          - !ImportValue EC2SecurityGroupID
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            dnf update -y
+            dnf install -y httpd mariadb105
+            systemctl start httpd
+            systemctl enable httpd
+            echo "Hello from $(hostname)" > /var/www/html/index.html
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: WebServerInstance
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !ImportValue PrivateSubnetA
+        - !ImportValue PrivateSubnetC
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        #事前にCloudFormationで定義された「どのテンプレートを使うか」を指定。        
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+        #最新のバージョン番号を取得して使用します。
+      MinSize: "2"
+      MaxSize: "2"
+      DesiredCapacity: "2"
+      #希望数。初期起動時や定常時に維持したい台数。
+      TargetGroupARNs:
+        - !ImportValue ALBTargetGroupARN
+        #Auto Scaling Groupが、指定したターゲットグループを関連付ける
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 60
+      #起動後立ち上がる時間を考慮して除外されないようにするための猶予です。
+      Tags:
+        - Key: Name
+          Value: AutoScalingInstance
+          PropagateAtLaunch: true
+          #作成されたEC2にこのタグが引き継がれる
