@@ -73,19 +73,11 @@ dnf install -y httpd mysql
 systemctl start httpd
 systemctl enable httpd
 echo "Hello from $(hostname)" > /var/www/html/index.html
+```
+
 | **ALB登録**        | ターゲットグループに自動登録 |
 | **SSM接続**        | Session Manager で可能 |
 | **スケール数**
-
----
-
-###   RDS
-
-* **エンジン**：MySQL
-* **マルチAZ**：任意
-* **DBサブネットグループ**：Private Subnet A/B を指定
-* **セキュリティグループ**：RDS-SG を適用
-* **パブリックアクセス**：**なし**
 
 ---
 
@@ -97,3 +89,13 @@ echo "Hello from $(hostname)" > /var/www/html/index.html
 * **リスナー**：HTTP（ポート80） → ターゲットグループ
 
 ---
+###   RDS
+
+* **エンジン**：MySQL
+* **マルチAZ**：任意
+* **DBサブネットグループ**：Private Subnet A/B を指定
+* **セキュリティグループ**：RDS-SG を適用
+* **パブリックアクセス**：**なし**
+
+---
+
