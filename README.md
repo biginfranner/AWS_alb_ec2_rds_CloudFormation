@@ -14,7 +14,6 @@
 * **Apacheインストール & RDS接続までUserDataで自動化**
 ---
 
----
 
 ###   VPC・サブネット
 
@@ -54,14 +53,17 @@
 | 全てのSG | すべてのトラフィック 80 from 0.0.0.0/0 | 公開        |
 
 ---
+### EC2（AutoScaling管理）
 
-### EC2
-
-* **AMI**：Amazon Linux  2023
-* **インスタンスタイプ**：t3.micro
-* **Subnet**：Private Subnet A と B
-* **パブリックIPなし**
-* **IAMロール**：`AmazonSSMManagedInstanceCore` をアタッチ
+| 項目               | 内容 |
+|--------------------|------|
+| **起動方式**        | AutoScaling（Launch Template）で2台自動起動 |
+| **AMI**            | Amazon Linux 2023（SSM Parameter使用で常に最新） |
+| **インスタンスタイプ** | t3.micro |
+| **Subnet**         | Private Subnet A / C |
+| **パブリックIP**    | なし |
+| **IAMロール**       | `AmazonSSMManagedInstanceCore` をアタッチ |
+| **UserData**       | Apacheインストール + ALB連携 + RDS接続（自動） |
 * **UserData**：
 
 ```bash
@@ -71,7 +73,9 @@ dnf install -y httpd mysql
 systemctl start httpd
 systemctl enable httpd
 echo "Hello from $(hostname)" > /var/www/html/index.html
-```
+| **ALB登録**        | ターゲットグループに自動登録 |
+| **SSM接続**        | Session Manager で可能 |
+| **スケール数**
 
 ---
 
