@@ -64,6 +64,11 @@
 | **パブリックIP**    | なし |
 | **IAMロール**       | `AmazonSSMManagedInstanceCore` をアタッチ |
 | **UserData**       | Apacheインストール + ALB連携 + RDS接続（自動） |
+| **ALB登録**        | ターゲットグループに自動登録 |
+| **SSM接続**        | Session Manager で可能 |
+| **スケール数**      | Min: 2, Max: 2（固定台数構成） |
+| **ヘルスチェック**  | ALB経由で実施（異常時は自動再作成） |
+
 * **UserData**：
 
 ```bash
@@ -74,10 +79,6 @@ systemctl start httpd
 systemctl enable httpd
 echo "Hello from $(hostname)" > /var/www/html/index.html
 ```
-
-| **ALB登録**        | ターゲットグループに自動登録 |
-| **SSM接続**        | Session Manager で可能 |
-| **スケール数**
 
 ---
 
