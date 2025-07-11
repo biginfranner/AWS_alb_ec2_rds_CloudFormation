@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Web3層構成の基本ネットワーク構築テンプレート
+Description: WebSystem-Network-Template
 
 Resources:
   VPC:
